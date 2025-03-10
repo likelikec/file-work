@@ -7,27 +7,39 @@ import matplotlib
 matplotlib.use('TkAgg')
 import matplotlib.pyplot as plt
 
+# 定义列名常量
+FEATURE_COLS = [
+    'Cyclic', 'Dcy', 'Dcy*', 'Dpt', 'Dpt*',
+    'PDcy', 'PDpt', 'OCavg', 'OCmax', 'WMC',
+    'CLOC', 'JLOC', 'LOC', 'JF', 'JM'
+]
+TARGET_COL = '1适合LLM'  # 假设第10列的列名是'Label'
+
 # 读取数据并预处理
 data = pd.read_excel(r"C:\Users\17958\Desktop\类覆盖率+指标.xlsx")
 
-# 删除因变量中值为2的行 (第10列，索引为9)
-data = data[data.iloc[:, 9] != 2]
+# 删除标签列中值为2的行
+data = data[data[TARGET_COL] != 2]
 
 # 定义特征和标签
-X = data.iloc[:, 14:29]  # O到AC列（索引14到28，共15列）
-y = data.iloc[:, 9].astype(int)  # 第10列作为标签
+X = data[FEATURE_COLS]  # 使用列名选择特征
+y = data[TARGET_COL].astype(int)  # 使用列名选择标签
 
 # 检查数据维度
 print(f"特征矩阵形状: {X.shape}, 标签形状: {y.shape}")
 
 # 划分训练集和测试集
-X_train, X_test, y_train, y_test = train_test_split(X, y,
-                                                    test_size=0.2,
-                                                    stratify=y,
-                                                    random_state=42)
+X_train, X_test, y_train, y_test = train_test_split(
+    X, y,
+    test_size=0.2,
+    stratify=y,
+    random_state=42
+)
 
-# 处理类别不平衡
+# 处理类别不平衡（保持原始逻辑）
 scale_pos_weight = len(y_train[y_train == 0]) / len(y_train[y_train == 1])
+
+
 
 # 定义XGBoost模型
 model = xgb.XGBClassifier(objective='binary:logistic',
