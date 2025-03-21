@@ -58,7 +58,7 @@ def clean_data(df):
 def main():
     try:
         # 数据加载与清洗
-        df = pd.read_excel(r"C:\Users\17958\Desktop\train.xlsx")
+        df = pd.read_excel(r"C:\Users\17958\Desktop\train-1.0.xlsx")
         original_size = len(df)
         df_clean = clean_data(df)
 
