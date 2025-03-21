@@ -48,12 +48,12 @@ model = xgb.XGBClassifier(objective='binary:logistic',
 
 # 参数网格
 param_grid = {
-    'max_depth': [3, 5, 7],
-    'learning_rate': [0.01, 0.1, 0.2],
+    'max_depth': [3, 5, 7,9,10],
+    'learning_rate': [0.01, 0.1, 0.12,0.15,0.18,0.2,0.21,0.24,0.26],
     'subsample': [0.6, 0.8, 1.0],
     'colsample_bytree': [0.6, 0.8, 1.0],
     'gamma': [0, 0.1, 0.2],
-    'n_estimators': [50, 100]
+    'n_estimators': [50, 100,150,200,250,300]
 }
 
 # 网格搜索

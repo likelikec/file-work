@@ -3,6 +3,9 @@ import numpy as np
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
 from sklearn.impute import SimpleImputer
+
+
+from sklearn.model_selection import GridSearchCV
 from sklearn.metrics import (
     accuracy_score,
     precision_score,
@@ -27,7 +30,7 @@ plt.rcParams['axes.unicode_minus'] = False
 # 定义特征列名
 FEATURES = [
     'Cyclic', 'Dcy', 'Dcy*', 'Dpt', 'Dpt*', 'PDcy', 'PDpt',
-    'OCavg', 'OCmax', 'WMC', 'CLOC', 'JLOC', 'LOC', 'JF', 'JM'
+    'OCavg', 'OCmax', 'WMC', 'CLOC', 'JLOC', 'LOC'
 ]
 
 def clean_data(df):
@@ -55,7 +58,7 @@ def clean_data(df):
 def main():
     try:
         # 数据加载与清洗
-        df = pd.read_excel(r"C:\Users\17958\Desktop\hits类覆盖率+指标.xlsx")
+        df = pd.read_excel(r"C:\Users\17958\Desktop\train.xlsx")
         original_size = len(df)
         df_clean = clean_data(df)
 
@@ -78,14 +81,46 @@ def main():
 
         # 模型配置
         models = [
-            ("SVM", SVC(kernel='rbf', probability=True, random_state=42, class_weight='balanced')),
-            ("Decision Tree", DecisionTreeClassifier(random_state=42, class_weight='balanced')),
-            ("Random Forest",
-             RandomForestClassifier(n_estimators=200,
-                                    class_weight='balanced',
-                                    min_samples_split=5,
-                                    max_depth=5)),
-            ("XGBoost", XGBClassifier(eval_metric='logloss', scale_pos_weight=np.sum(y == 0) / np.sum(y == 1)))
+            ("SVM", GridSearchCV(
+                SVC(kernel='rbf', probability=True, random_state=42, class_weight='balanced'),
+                param_grid={
+                    'C': [ 5,8,10],
+                    'gamma': [0.1, 0.2,0.3, 'scale']
+                },
+                cv=3,
+                scoring='f1'
+            )),
+            ("Decision Tree", GridSearchCV(
+                DecisionTreeClassifier(random_state=42, class_weight='balanced'),
+                param_grid={
+                    'max_depth': [4, 5, 6],
+                    'min_samples_split': [ 8,9,10,11,12]
+                },
+                cv=3,
+                scoring='f1'
+            )),
+            ("Random Forest", GridSearchCV(
+                RandomForestClassifier(class_weight='balanced', random_state=42),
+                param_grid={
+                    'n_estimators': [80,90,100,110,120 ],
+                    'max_depth': [6, 7,8,9,10],
+                    'min_samples_split': [4,5, 6,7]
+                },
+                cv=3,
+                scoring='f1'
+            )),
+            ("XGBoost", GridSearchCV(
+                XGBClassifier(eval_metric='logloss',
+                              scale_pos_weight=np.sum(y == 0) / np.sum(y == 1),
+                              random_state=42),
+                param_grid={
+                    'learning_rate': [ 0.18,0.19,0.2,0.21,0.22,0.23],
+                    'max_depth': [3,4,2 ],
+                    'subsample': [0.6,0.7,0.8,0.9 ]
+                },
+                cv=3,
+                scoring='f1'
+            ))
         ]
 
         # 训练评估
@@ -95,7 +130,13 @@ def main():
                 train_data = X_train_scaled if name == "SVM" else X_train.values
                 test_data = X_test_scaled if name == "SVM" else X_test.values
 
+                # 网格搜索训练
                 model.fit(train_data, y_train)
+
+                # 输出最佳参数
+                print(f"\n=== {name} 最佳参数 ===")
+                print(model.best_params_)
+
                 y_pred = model.predict(test_data)
                 y_proba = model.predict_proba(test_data)[:, 1]
 
@@ -105,6 +146,17 @@ def main():
 
                 fpr, tpr, _ = roc_curve(y_test, y_proba)
                 roc_auc = auc(fpr, tpr)
+
+                if name == "Random Forest":
+                    plt.figure(figsize=(10, 6))
+                    importances = model.best_estimator_.feature_importances_
+                    indices = np.argsort(importances)[::-1]
+                    plt.title("特征重要性 - 随机森林")
+                    plt.barh(range(len(indices)), importances[indices], align='center')
+                    plt.yticks(range(len(indices)), [FEATURES[i] for i in indices])
+                    plt.xlabel('相对重要性')
+                    plt.tight_layout()
+                    plt.savefig('feature_importance.png', dpi=300)
 
                 results.append({
                     "Model": name,

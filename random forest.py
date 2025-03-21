@@ -34,13 +34,13 @@ y = df['1适合LLM']
 
 # 划分训练集和测试集（分层抽样）
 X_train, X_test, y_train, y_test = train_test_split(
-    X, y, test_size=0.3, stratify=y, random_state=42)
+    X, y, test_size=0.2, stratify=y, random_state=42)
 
 # 参数网格
 param_grid = {
-    'n_estimators': range( 50,200,20),
+    'n_estimators': range( 50,120,5),
     'max_depth': [None, 3, 5,8,10],
-    'min_samples_split': [3,5,8],
+    'min_samples_split': [2,3,5,8,10],
     'class_weight': ['balanced', None]
 }
 

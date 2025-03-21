@@ -1,57 +1,69 @@
 import pandas as pd
 import re
+import numpy as np
 
+# 定义文件路径
+coverage_path = r"C:\Users\17958\Desktop\hits类覆盖率.xlsx"
+train_path = r"C:\Users\17958\Desktop\train-defect4j修改版.xlsx"
+train_1_path = r"C:\Users\17958\Desktop\train-1.xlsx"
+train_2_path = r"C:\Users\17958\Desktop\train-2.xlsx"
 
-def parse_percent(value):
-    """解析百分比数据"""
-    if isinstance(value, str):
-        match = re.search(r'(\d+\.?\d*)%', value)
-        return float(match.group(1)) / 100 if match else 0.0
-    elif isinstance(value, (float, int)):
-        return value
+# ### 第一步：处理“类覆盖率.xlsx”数据集
+coverage_df = pd.read_excel(coverage_path, engine='openpyxl')
+coverage_df.fillna('100%', inplace=True)
+coverage_df.to_excel(coverage_path, index=False)
+
+# ### 第二步：处理“train.xlsx”数据集并覆盖指定列
+train_df = pd.read_excel(train_path, engine='openpyxl')
+coverage_df.rename(columns={'lang-testart': 'testart', 'lang-mogul': 'mogul'}, inplace=True)
+coverage_subset = coverage_df[['testart', 'CC', 'MC', 'LC', 'BC', 'mogul', 'CC-1', 'MC-1', 'LC-1', 'BC-1']]
+train_df = train_df.merge(coverage_subset, on='testart', how='left', suffixes=('', '_coverage'))
+
+for col in ['CC', 'MC', 'LC', 'BC', 'mogul', 'CC-1', 'MC-1', 'LC-1', 'BC-1']:
+    train_df[col] = train_df[f'{col}_coverage'].combine_first(train_df[col])
+    train_df.drop(columns=[f'{col}_coverage'], inplace=True)
+
+train_df.to_excel(train_1_path, index=False)
+
+# ### 第三步：对“train-1.xlsx”进行进一步处理
+train_1_df = pd.read_excel(train_1_path, engine='openpyxl')
+
+# 定义函数将百分比字符串转换为浮点数
+def percent_to_float(x):
+    if isinstance(x, str):
+        match = re.search(r'(\d+\.?\d*)%', x)
+        if match:
+            percent_str = match.group(1)
+            return float(percent_str) / 100
+        else:
+            return np.nan
     else:
-        return 0.0
+        return x
 
+# 将相关列转换为浮点数
+for col in ['CC', 'MC', 'LC', 'BC', 'CC-1', 'MC-1', 'LC-1', 'BC-1']:
+    train_1_df[col] = train_1_df[col].apply(percent_to_float)
+    train_1_df[col] = pd.to_numeric(train_1_df[col], errors='coerce')
 
-# 读取Excel文件（确保文件存在且有标题行）
-file_path = r'C:\Users\17958\Desktop\hits类覆盖率.xlsx'
-df = pd.read_excel(
-    file_path,
-    sheet_name=0,
-    header=0,  # 明确指定第一行为列名
-    na_values=['', None]
-)
+# 处理 NaN 值（这里填充为 0，可根据需求调整）
+train_1_df.fillna(0, inplace=True)
 
+# 处理“1适合LLM”列
+if '1适合LLM' not in train_1_df.columns:
+    train_1_df['1适合LLM'] = 2
+else:
+    train_1_df['1适合LLM'] = 2
 
-D_COLUMN_NAME = 'LC'
-E_COLUMN_NAME = 'BC'
-I_COLUMN_NAME = 'LC-1'
-J_COLUMN_NAME = 'BC-1'
-K_COLUMN_NAME = '1适合LLM'
+# 定义条件并赋值
+condition1 = (train_1_df['BC'] > train_1_df['BC-1']) & (train_1_df['LC'] >= train_1_df['LC-1'])
+condition2 = (train_1_df['BC'] == train_1_df['BC-1']) & (train_1_df['LC'] >= train_1_df['LC-1'])
+condition3 = (train_1_df['BC'] == train_1_df['BC-1']) & (train_1_df['LC'] < train_1_df['LC-1'])
+condition4 = (train_1_df['BC'] < train_1_df['BC-1']) & (train_1_df['LC'] <= train_1_df['LC-1'])
 
+train_1_df.loc[condition1 | condition2, '1适合LLM'] = 1
+train_1_df.loc[condition3 | condition4, '1适合LLM'] = 0
 
-print("当前列名:", df.columns.tolist())
+# ### 第四步：保存处理后的数据
+train_1_df.to_excel(train_2_path, index=False)
 
-# 填充空值为0
-df.fillna(0, inplace=True)
-
-# 处理百分比列
-for col in [D_COLUMN_NAME, E_COLUMN_NAME, I_COLUMN_NAME, J_COLUMN_NAME]:
-    df[col] = df[col].apply(parse_percent)
-
-# 计算K列逻辑
-df[K_COLUMN_NAME] = 2  # 初始化列为0
-for index, row in df.iterrows():
-    d = row[D_COLUMN_NAME]
-    e = row[E_COLUMN_NAME]
-    i = row[I_COLUMN_NAME]
-    j = row[J_COLUMN_NAME]
-
-    if d >= i and e >= j:
-        df.at[index, K_COLUMN_NAME] = 1
-    elif d <= i and e <= j:
-        df.at[index, K_COLUMN_NAME] = 0
-
-# 保存结果
-df.to_excel('output.xlsx', index=False)
-print("处理完成！结果已保存至 output.xlsx")
+print("处理完成！新文件已保存为：", train_2_path)
