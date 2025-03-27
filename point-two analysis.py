@@ -2,7 +2,7 @@ import pandas as pd
 from scipy.stats import pointbiserialr
 
 # 读取Excel文件（注意路径需存在且列名正确）
-file_path = r"C:\Users\17958\Desktop\train.xlsx"
+file_path = r"C:\Users\17958\Desktop\train-1.0.xlsx"
 df = pd.read_excel(file_path)
 
 # 定义目标列和二分类列

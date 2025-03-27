@@ -1,111 +1,88 @@
 import pandas as pd
 import numpy as np
-import xgboost as xgb
+from xgboost import XGBClassifier
 from sklearn.model_selection import train_test_split, GridSearchCV
-from sklearn.metrics import accuracy_score, precision_score, f1_score, roc_auc_score, classification_report, roc_curve, auc
-import matplotlib
-matplotlib.use('TkAgg')
+from sklearn.metrics import accuracy_score, classification_report, roc_auc_score, roc_curve
+from imblearn.over_sampling import SMOTE
 import matplotlib.pyplot as plt
 
-# 定义列名常量
-FEATURE_COLS = [
-    'Cyclic', 'Dcy', 'Dcy*', 'Dpt', 'Dpt*',
-    'PDcy', 'PDpt', 'OCavg', 'OCmax', 'WMC',
-    'CLOC', 'JLOC', 'LOC', 'JF', 'JM'
-]
-TARGET_COL = '1适合LLM'  # 假设第10列的列名是'Label'
+try:
+    # 读取数据
+    file_path = r"C:\Users\17958\Desktop\train-1.0.xlsx"
+    data = pd.read_excel(file_path)
+    print("数据读取成功，样本数:", len(data))
 
-# 读取数据并预处理
-data = pd.read_excel(r"C:\Users\17958\Desktop\类覆盖率+指标.xlsx")
+    # 准备特征和目标变量
+    X = data[['Cyclic', 'Dcy', 'Dcy*', 'Dpt', 'Dpt*', 'PDcy', 'PDpt',
+              'OCmax', 'OCavg', 'WMC', 'CLOC', 'JLOC', 'LOC']]
+    y = data['1适合LLM']
 
-# 删除标签列中值为2的行
-data = data[data[TARGET_COL] != 2]
+    # 检查数据是否有缺失值
+    if X.isnull().sum().sum() > 0 or y.isnull().sum() > 0:
+        raise ValueError("数据中存在缺失值，请先处理！")
 
-# 定义特征和标签
-X = data[FEATURE_COLS]  # 使用列名选择特征
-y = data[TARGET_COL].astype(int)  # 使用列名选择标签
+    # 分割数据集
+    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
 
-# 检查数据维度
-print(f"特征矩阵形状: {X.shape}, 标签形状: {y.shape}")
+    # 使用SMOTE处理不平衡数据
+    smote = SMOTE(random_state=42)
+    X_train_balanced, y_train_balanced = smote.fit_resample(X_train, y_train)
+    print("SMOTE处理后训练集样本数:", len(X_train_balanced))
 
-# 划分训练集和测试集
-X_train, X_test, y_train, y_test = train_test_split(
-    X, y,
-    test_size=0.2,
-    stratify=y,
-    random_state=42
-)
+    # 定义XGBoost参数网格
+    param_grid = {
+        'max_depth': [1,2,3, 5, 7,None],
+        'learning_rate': [0.01, 0.07,0.08,0.09,0.1,0.11,0.12,0.13,0.14,0.15,0.2, 0.3],
+        'n_estimators': [100, 150,180,190,200,210,220,230,240, 300],
+        'min_child_weight': [1, 2,3, 5],
+        'subsample': [0.7, 0.8, 0.9,1.0,1.1,1.2,1.3,1.4,1.5,1.6,2.0]
+    }
 
-# 处理类别不平衡（保持原始逻辑）
-scale_pos_weight = len(y_train[y_train == 0]) / len(y_train[y_train == 1])
+    # 创建XGBoost分类器（移除use_label_encoder）
+    xgb = XGBClassifier(eval_metric='logloss', random_state=42)
 
+    # 进行网格搜索
+    grid_search = GridSearchCV(xgb, param_grid, cv=5, scoring='f1', n_jobs=-1)
+    grid_search.fit(X_train_balanced, y_train_balanced)
 
+    # 输出最佳参数
+    print("最佳参数:", grid_search.best_params_)
 
-# 定义XGBoost模型
-model = xgb.XGBClassifier(objective='binary:logistic',
-                          eval_metric='auc',
-                          scale_pos_weight=scale_pos_weight)
+    # 使用最佳参数训练模型
+    best_model = grid_search.best_estimator_
+    y_pred = best_model.predict(X_test)
 
-# 参数网格
-param_grid = {
-    'max_depth': [3, 5, 7,9,10],
-    'learning_rate': [0.01, 0.1, 0.12,0.15,0.18,0.2,0.21,0.24,0.26],
-    'subsample': [0.6, 0.8, 1.0],
-    'colsample_bytree': [0.6, 0.8, 1.0],
-    'gamma': [0, 0.1, 0.2],
-    'n_estimators': [50, 100,150,200,250,300]
-}
+    # 计算总体准确度
+    accuracy = accuracy_score(y_test, y_pred)
+    print("\n总体准确度 (Accuracy): {:.4f}".format(accuracy))
 
-# 网格搜索
-grid_search = GridSearchCV(estimator=model,
-                           param_grid=param_grid,
-                           scoring='roc_auc',
-                           cv=3,
-                           verbose=1)
+    # 获取详细的分类报告
+    print("\n分类报告:")
+    print(classification_report(y_test, y_pred, target_names=['负样本 (0)', '正样本 (1)']))
 
-grid_search.fit(X_train, y_train)
+    # 计算AUC和ROC曲线
+    y_pred_proba = best_model.predict_proba(X_test)[:, 1]
+    auc = roc_auc_score(y_test, y_pred_proba)
+    print("AUC值: {:.4f}".format(auc))
 
-# 获取最佳模型
-best_model = grid_search.best_estimator_
+    # 计算ROC曲线
+    fpr, tpr, _ = roc_curve(y_test, y_pred_proba)
 
-# 测试集预测
-y_pred = best_model.predict(X_test)
-y_proba = best_model.predict_proba(X_test)[:, 1]
+    # 绘制ROC曲线
+    plt.figure(figsize=(8, 6))
+    plt.plot(fpr, tpr, color='blue', label=f'ROC曲线 (AUC = {auc:.4f})')
+    plt.plot([0, 1], [0, 1], color='red', linestyle='--')
+    plt.xlabel('False Positive Rate')
+    plt.ylabel('True Positive Rate')
+    plt.title('ROC曲线')
+    plt.legend()
+    plt.grid(True)
+    plt.show()
 
-# 计算各项指标
-accuracy = accuracy_score(y_test, y_pred)
-precision = precision_score(y_test, y_pred)
-f1 = f1_score(y_test, y_pred)
-roc_auc = roc_auc_score(y_test, y_proba)
+    # 输出正负样本的分布
+    print("\n测试集样本分布:")
+    print("负样本 (0) 数量:", sum(y_test == 0))
+    print("正样本 (1) 数量:", sum(y_test == 1))
 
-# 分类报告
-report = classification_report(y_test, y_pred)
-
-# 绘制ROC曲线
-fpr, tpr, _ = roc_curve(y_test, y_proba)
-roc_auc = auc(fpr, tpr)
-
-plt.figure(figsize=(8, 6))
-plt.plot(fpr, tpr, color='darkorange', lw=2,
-         label=f'ROC curve (AUC = {roc_auc:.2f})')
-plt.plot([0, 1], [0, 1], color='navy', lw=2, linestyle='--')
-plt.xlim([0.0, 1.0])
-plt.ylim([0.0, 1.05])
-plt.xlabel('False Positive Rate', fontsize=12)
-plt.ylabel('True Positive Rate', fontsize=12)
-plt.title('ROC Curve', fontsize=14)
-plt.legend(loc="lower right", fontsize=10)
-plt.grid(True, alpha=0.3)
-plt.savefig('roc_fallback.png')
-print(f"已保存图像")
-
-# 输出结果
-print("最佳参数组合:")
-print(grid_search.best_params_)
-print("\n评估指标:")
-print(f"准确度: {accuracy:.4f}")
-print(f"精确度: {precision:.4f}")
-print(f"F1分数: {f1:.4f}")
-print(f"AUC值: {roc_auc:.4f}")
-print("\n分类报告:")
-print(report)
+except Exception as e:
+    print("发生错误:", str(e))

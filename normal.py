@@ -6,7 +6,7 @@ from statsmodels.graphics.gofplots import ProbPlot
 import os
 
 # 配置参数
-FILE_PATH = r"C:\Users\17958\Desktop\train.xlsx"
+FILE_PATH = r"C:\Users\17958\Desktop\train-1.0.xlsx"
 COLUMNS_TO_CHECK = [
     'Cyclic', 'Dcy', 'Dcy*', 'Dpt', 'Dpt*',
     'PDcy', 'PDpt', 'OCavg', 'OCmax', 'WMC',
