@@ -2,12 +2,18 @@ import pandas as pd
 from scipy.stats import pointbiserialr
 
 # 读取Excel文件（注意路径需存在且列名正确）
-file_path = r"C:\Users\17958\Desktop\train-1.0.xlsx"
+file_path = r"C:\Users\17958\Desktop\train2.0_processed.xlsx"
 df = pd.read_excel(file_path)
 
 # 定义目标列和二分类列
-target_columns = ["Cyclic", "Dcy", "Dcy*", "Dpt", "Dpt*", "PDcy", "PDpt",
-                  "OCavg", "OCmax", "WMC", "CLOC", "JLOC", "LOC", "JF", "JM"]
+target_columns = [
+    "WMC", "DIT", "NOC", "CBO", "RFC", "LCOM", "B", "D", "E", "N",
+    "n", "V", "CLOC", "NCLOC", "LOC", "Cyclic", "Dcy", "Dcy*", "DPT",
+    "DPT*", "PDcy", "PDpt", "Command", "COM_RAT", "CONS", "MPC", "NAAC",
+    "NAIC", "NOAC", "NOIC", "NOOC", "NTP", "Level", "Level*", "Inner",
+    "INNER", "CSA", "CSO", "CSOA", "jf", "JM", "JLOC", "OCavg", "OCmax",
+    "OPavg", "OSavg", "OSmax", "Query", "STAT", "SUB", "TCOM_RAT", "TODO"
+]
 binary_column = "1适合LLM"  # 确保列名与实际文件一致
 
 # 检查二分类列是否合法

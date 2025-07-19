@@ -8,15 +8,22 @@ import matplotlib.pyplot as plt
 
 try:
     # 读取数据
-    file_path = r"C:\Users\17958\Desktop\train-1.0.xlsx"
+    file_path = r"C:\Users\17958\Desktop\train_4.0.xlsx"
     data = pd.read_excel(file_path)
     print("数据读取成功，样本数:", len(data))
 
     # 准备特征和目标变量
-    X = data[['Cyclic', 'Dcy', 'Dcy*', 'Dpt', 'Dpt*', 'PDcy', 'PDpt',
-              'OCmax', 'OCavg', 'WMC', 'CLOC', 'JLOC', 'LOC']]
+    X = data[['B', 'COM_RAT', 'Cyclic', 'D',
+   'Dcy*', 'DIT', 'DPT*', 'E', 'Inner', 'LCOM', 'Level', 'LOC', 'N',
+   'NCLOC', 'NOAC', 'NOC', 'NOIC', 'OCmax', 'PDcy', 'PDpt', 'STAT', 'SUB',
+   'TCOM_RAT', 'V', 'WMC', 'CBO', 'CLOC', 'Command', 'CONS', 'CSA', 'CSO',
+   'CSOA', 'Dcy', 'DPT', 'INNER', 'jf', 'JLOC', 'Jm', 'Level*', 'MPC', 'n',
+   'NAAC', 'NAIC', 'NOOC', 'NTP', 'OCavg', 'OPavg', 'OSavg', 'OSmax',
+   'Query', 'RFC', 'TODO']]
     y = data['1适合LLM']
-
+    # 使用0填充缺失值
+    X = X.fillna(0)
+    y = y.fillna(0)
     # 检查数据是否有缺失值
     if X.isnull().sum().sum() > 0 or y.isnull().sum() > 0:
         raise ValueError("数据中存在缺失值，请先处理！")
@@ -32,10 +39,10 @@ try:
     # 定义XGBoost参数网格
     param_grid = {
         'max_depth': [1,2,3, 5, 7,None],
-        'learning_rate': [0.01, 0.07,0.08,0.09,0.1,0.11,0.12,0.13,0.14,0.15,0.2, 0.3],
-        'n_estimators': [100, 150,180,190,200,210,220,230,240, 300],
+        'learning_rate': [0.1,0.15,0.2,0.21,0.22,0.23,0.24,0.25, 0.3],
+        'n_estimators': [100, 150,200,220,240, 300],
         'min_child_weight': [1, 2,3, 5],
-        'subsample': [0.7, 0.8, 0.9,1.0,1.1,1.2,1.3,1.4,1.5,1.6,2.0]
+        'subsample': [0.8, 0.9,0.92,0.94,0.95,0.96,0.97,0.98,1.0,1.5]
     }
 
     # 创建XGBoost分类器（移除use_label_encoder）

@@ -6,11 +6,14 @@ from statsmodels.graphics.gofplots import ProbPlot
 import os
 
 # 配置参数
-FILE_PATH = r"C:\Users\17958\Desktop\train-1.0.xlsx"
+FILE_PATH = r"C:\Users\17958\Desktop\train2.0_processed.xlsx"
 COLUMNS_TO_CHECK = [
-    'Cyclic', 'Dcy', 'Dcy*', 'Dpt', 'Dpt*',
-    'PDcy', 'PDpt', 'OCavg', 'OCmax', 'WMC',
-    'CLOC', 'JLOC', 'LOC'
+    "WMC", "DIT", "NOC", "CBO", "RFC", "LCOM", "B", "D", "E", "N",
+    "n", "V", "CLOC", "NCLOC", "LOC", "Cyclic", "Dcy", "Dcy*", "DPT",
+    "DPT*", "PDcy", "PDpt", "Command", "COM_RAT", "CONS", "MPC", "NAAC",
+    "NAIC", "NOAC", "NOIC", "NOOC", "NTP", "Level", "Level*", "Inner",
+    "INNER", "CSA", "CSO", "CSOA", "jf", "JM", "JLOC", "OCavg", "OCmax",
+    "OPavg", "OSavg", "OSmax", "Query", "STAT", "SUB", "TCOM_RAT", "TODO"
 ]
 OUTPUT_EXCEL = r"C:\Users\17958\Desktop\normality_test_results.xlsx"
 
