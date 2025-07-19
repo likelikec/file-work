@@ -1,0 +1,24 @@
+最终岭回归模型摘要：
+                 Results: Ordinary least squares
+==================================================================
+Model:              OLS              Adj. R-squared:     0.002    
+Dependent Variable: 1适合LLM           AIC:                1252.6159
+Date:               2025-06-18 22:05 BIC:                1262.3747
+No. Observations:   972              Log-Likelihood:     -624.31  
+Df Model:           1                F-statistic:        2.940    
+Df Residuals:       970              Prob (F-statistic): 0.0867   
+R-squared:          0.003            Scale:              0.21199  
+---------------------------------------------------------------------
+         Coef.     Std.Err.       t       P>|t|      [0.025    0.975]
+---------------------------------------------------------------------
+const    0.3010      0.0150    20.0633    0.0000     0.2716    0.3305
+NTP      0.0939      0.0547     1.7145    0.0867    -0.0136    0.2013
+------------------------------------------------------------------
+Omnibus:              1573.927      Durbin-Watson:         1.553  
+Prob(Omnibus):        0.000         Jarque-Bera (JB):      180.788
+Skew:                 0.842         Prob(JB):              0.000  
+Kurtosis:             1.724         Condition No.:         4      
+==================================================================
+Notes:
+[1] Standard Errors assume that the covariance matrix of the
+errors is correctly specified.
